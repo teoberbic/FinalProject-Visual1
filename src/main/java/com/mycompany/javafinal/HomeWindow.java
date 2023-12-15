@@ -1195,59 +1195,54 @@ public class HomeWindow extends javax.swing.JFrame {
     }//GEN-LAST:event_jTextFieldHome1ActionPerformed
     private void menuSaveHelper(DefaultTableModel model, JTable table, String fileName) {
     // code adapted from https://www.youtube.com/watch?v=LP7_DlIe670
-    int selectedPane = jTabbedPane1.getSelectedIndex();
-    boolean shown = false;
-    
-    if (table.getRowCount() == 0) { //if there is nothing in the table
-        JOptionPane.showMessageDialog(this, "THERE IS NOTHING TO SAVE", "ERROR", JOptionPane.ERROR_MESSAGE);
-    } else {
-        for (int i = 0; i < model.getRowCount(); i++) { 
-            if (model.getValueAt(i, 8) == null) { // check if the personal rating column is empty because it cant be empty if we want to save it
-                if (selectedPane == 3) {
-                    model.setValueAt("N/A", i, 8); //if its watchlist tab set it as "N/A" because there we cant add personal rating
-                } else if (!shown) {
-                    JOptionPane.showMessageDialog(this, "Enter a Personal Rating for each movie to save", "ERROR", JOptionPane.ERROR_MESSAGE); // display a message to get them to enter a rating
-                    shown = true;
-                }
-            }
-            
-            //write to file
-            String filePath = "/Users/teoberbic/Desktop/" + fileName;
-            File file = new File(filePath);
-            try {
-                FileWriter fw = new FileWriter(file);
-                BufferedWriter bw = new BufferedWriter(fw);
+        int selectedPane = jTabbedPane1.getSelectedIndex();
+        boolean shown = false;
 
-                for (int p = 0; p < table.getRowCount(); p++) {
-                    for (int j = 0; j < table.getColumnCount(); j++) {
-                        Object value = table.getValueAt(p, j);
-                        //check for null and provide a default value "N/A"
-                        String stringValue = (value != null ? value.toString() : "N/A");
-                        bw.write(stringValue + "  ");
-                         
-                        //if it's the first col, update the movieMap
-                      
-                        if (j == 0) {
-                           
-                            if (movie != null) {
-                                movieMap.put(stringValue, movie);
-                            }
-                        }   
-                        
+        if (table.getRowCount() == 0) {
+            JOptionPane.showMessageDialog(this, "THERE IS NOTHING TO SAVE", "ERROR", JOptionPane.ERROR_MESSAGE);
+        } else {
+            for (int i = 0; i < model.getRowCount(); i++) {
+                if (model.getValueAt(i, 8) == null) {
+                    if (selectedPane == 3) {
+                        model.setValueAt("N/A", i, 8);
+                    } else if (!shown) {
+                        JOptionPane.showMessageDialog(this, "Enter a Personal Rating for each movie to save", "ERROR", JOptionPane.ERROR_MESSAGE);
+                        shown = true;
                     }
-                    bw.newLine();
                 }
 
-                bw.close();
-                fw.close();
+                //write to file
+                String resourceFilePath = "/main/resources/" + fileName;
 
-            } catch (IOException ex) {
-                Logger.getLogger(this.getName()).log(Level.SEVERE, null, ex);
+                try {
+                    //use class loader to get the resource file
+                    FileWriter fw = new FileWriter(getClass().getResource(resourceFilePath).getFile());
+                    BufferedWriter bw = new BufferedWriter(fw);
+
+                    for (int p = 0; p < table.getRowCount(); p++) {
+                        for (int j = 0; j < table.getColumnCount(); j++) {
+                            Object value = table.getValueAt(p, j);
+                            String stringValue = (value != null ? value.toString() : "N/A");
+                            bw.write(stringValue + "  ");
+
+                            if (j == 0) { //first thing in col
+                                if (movie != null) {
+                                    movieMap.put(stringValue, movie);
+                                }
+                            }
+                        }
+                        bw.newLine();
+                    }
+
+                    bw.close();
+                    fw.close();
+
+                } catch (IOException ex) {
+                    Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, ex);
+                }
             }
         }
-        //end of code adapted
     }
-}
 
 
     private void jMenuItemSaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemSaveActionPerformed
@@ -1267,28 +1262,28 @@ public class HomeWindow extends javax.swing.JFrame {
     }//GEN-LAST:event_jMenuItemSaveActionPerformed
     private void menuLoadHelper(JTable table, String fileName) {
         // code adapted from https://www.youtube.com/watch?v=LP7_DlIe670
-        
         //load from file
-        String filePath = "/Users/teoberbic/Desktop/"+ fileName;
-        File file = new File(filePath);
-        
+        String resourceFilePath = "/main/resources/" + fileName;
+
         try {
+            //use class loader to get the resource file
+            File file = new File(getClass().getResource(resourceFilePath).getFile());
+
             FileReader fr = new FileReader(file);
             BufferedReader br = new BufferedReader(fr);
-            
-            DefaultTableModel model = (DefaultTableModel)table.getModel();
-            Object[] lines = br.lines().toArray(); //create each line as list to prepare for inserting into table
-            if (lines.length == 0 || (lines.length == 1 && lines[0].toString().trim().isEmpty())) { //if there is nothing in the file
+
+            DefaultTableModel model = (DefaultTableModel) table.getModel();
+            Object[] lines = br.lines().toArray();
+
+            if (lines.length == 0 || (lines.length == 1 && lines[0].toString().trim().isEmpty())) {
                 JOptionPane.showMessageDialog(this, "THERE IS NOTHING IN THE FILE", "ERROR", JOptionPane.ERROR_MESSAGE);
                 return;
             }
+
             for (int i = 0; i < lines.length; i++) {
-                String[] row = lines[i].toString().split("  "); //write until there is a double space and add, then repeat for each movie in the file
+                String[] row = lines[i].toString().split("  ");
                 model.addRow(row);
-                //create a Movie and populate its properties from the row
-                
-             
-                //add the movie to the movieMap with its title as the key
+
                 Movie loadedMovie = new Movie();
                 loadedMovie.setTitle(row[0]);
                 loadedMovie.setDirector(row[1]);
@@ -1299,7 +1294,7 @@ public class HomeWindow extends javax.swing.JFrame {
                 loadedMovie.setRating(row[6]);
                 loadedMovie.setBoxOffice(row[7]);
                 loadedMovie.setPlot(row[8]);
-                
+
                 try {
                     Movie b = movieMap.get(loadedMovie.getTitle());
                     String boxOffice = b.getBoxOffice();
@@ -1312,15 +1307,14 @@ public class HomeWindow extends javax.swing.JFrame {
                     String title = model.getValueAt(0, 0).toString();
                     movieMap.put(title, loadedMovie);
                 } catch (NullPointerException e) {
-                    
+
                 }
             }
-            
-        } catch (FileNotFoundException ex) {
-            Logger.getLogger(this.getName()).log(Level.SEVERE, null, ex);
+
+        } catch (IOException ex) {
+            Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, ex);
             JOptionPane.showMessageDialog(this, "LOAD TO TAB SAVED FROM", "ERROR", JOptionPane.ERROR_MESSAGE);
         }
-        //end of code adapted
     }
 
 
